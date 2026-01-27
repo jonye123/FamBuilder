@@ -1,11 +1,15 @@
 #!/bin/bash
 
-# GrassFam Iterative HMM-Based Clustering Algorithm
+# NoorFam Iterative HMM-Based Clustering Algorithm
 # Input: N0.tsv (gene families from OrthoFinder)
 
-input_file="N0.tsv"
-if [[ ! -f "$input_file" ]]; then
-    echo "Error: Input file $input_file not found."
+# Define global variables
+INPUT_FILE=${1} # Input file
+PROJECT_NAME=${2:-"my_project"} # Output name/project name (Default: "my_project")
+THREADS=${3:-4} # Threads (Default: 4)
+
+if [[ ! -f "$INPUT_FILE" ]]; then
+    echo "Error: Input file $INPUT_FILE not found."
     exit 1
 fi
 
@@ -29,7 +33,7 @@ while true; do
     cp confusionMatrxPlots.ipynb "$dir"/
     cp hogFilter.ipynb "$dir"/
     cp orthofinder_to_fasta.py "$dir"/
-    cp "$input_file" "$dir"
+    cp "$INPUT_FILE" "$dir"
 
     # Move into the directory
     cd "$dir" || exit 1
@@ -63,7 +67,7 @@ while true; do
     fi
 
     # Calculate error metrics
-    base_path="grassHmmDatabase/grassfam1"
+    base_path="${PROJECT_NAME}HmmDatabase/${PROJECT_NAME}fam1"
 
     A=$(tail -n +2 "$base_path"/filtered_confusion_df | awk '$2 != $3' | wc -l)
     B=$(tail -n +2 "$base_path"/geneInfo | wc -l)
@@ -87,11 +91,11 @@ while true; do
 
             rm -rf "HmmRun$((iteration))"   
             while read -r item; do
-                rm -f "${dir}/grassfamHmmLib/${item}.hmm"
+                rm -f "${dir}/${PROJECT_NAME}HmmLib/${item}.hmm"
             done < <(tail -n +2 "$dir/$base_path"/disagreeMatrix3 | awk '{print $1}')
             mkdir -p HMMFinal
-            cat $dir/grassfamHmmLib/* > HMMFinal/grassfam
-            hmmpress HMMFinal/grassfam
+            cat $dir/${PROJECT_NAME}HmmLib/* > HMMFinal/${PROJECT_NAME}
+            hmmpress HMMFinal/${PROJECT_NAME}
 
             # in confusionMatrix of dir, remove rows that contain items in disagreeMatrix3, then rerun confusionMatrxPlots.ipynb
             cd "$dir"
@@ -121,11 +125,11 @@ while true; do
 
         rm -rf "HmmRun$((iteration))"
         while read -r item; do
-            rm -f "${dir}/grassfamHmmLib/${item}.hmm"
+            rm -f "${dir}/${PROJECT_NAME}HmmLib/${item}.hmm"
         done < <(tail -n +2 "$dir/$base_path"/disagreeMatrix3 | awk '{print $1}')
         mkdir -p HMMFinal
-        cat $dir/grassfamHmmLib/* > HMMFinal/grassfam
-        hmmpress HMMFinal/grassfam
+        cat $dir/${PROJECT_NAME}HmmLib/* > HMMFinal/${PROJECT_NAME}
+        hmmpress HMMFinal/${PROJECT_NAME}
 
         # in confusionMatrix of dir, remove rows that contain items in disagreeMatrix3, then rerun confusionMatrxPlots.ipynb
         cd "$dir"
@@ -143,4 +147,4 @@ while true; do
     fi
 done
 
-echo "GrassFam iterative clustering finished after $iteration iterations."
+echo "NoorFam iterative clustering finished after $iteration iterations."

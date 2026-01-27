@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "noor_fam_package"
+version = "0.1.0"
+authors = [
+  { name="Jonathan Ye", email="yezuc18@gmail.com" },
+]
+description = "Research tools for the Rokhsar lab"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "numpy",
+    "pandas",
+    "biopython",
+    "matplotlib",
+    "seaborn",
+    "jupyter",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]  # This tells Python your code is inside the 'src' folder
