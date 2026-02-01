@@ -1,19 +1,36 @@
 #!/bin/bash
+# Usage: ./maffter.sh [project_name] [threads]
+
+# Take in inputs
+PROJECT_NAME=${1:-"my_project"}
+THREADS=${2:-4}
 
 # Define the directory containing the .fa files
-input_dir="../hogDirectoryFiltered"
-output_dir="../MSA/"
+# These are relative to where the script is run
+INPUT_DIR="../hogDirectoryFiltered"
+OUTPUT_DIR="../MSA/"
 
-mkdir -p $output_dir
+# Create output directory
+mkdir -p "$OUTPUT_DIR"
 
+# Define the function for GNU Parallel
 mafft_file() {
     local file="$1"
+    local output_dir="$2"
+    
     local filename=$(basename -- "$file" .fasta)
     local output_file="${output_dir}${filename}_mafft_output.fasta"
-    mafft --localpair --maxiterate 1000 --anysymbol "$file" > "$output_file"
+    
+    # Run MAFFT (Quiet mode to reduce log spam)
+    mafft --quiet --localpair --maxiterate 1000 --anysymbol "$file" > "$output_file"
 }
 
 export -f mafft_file
-export output_dir
 
-find "$input_dir" -type f -name '*.fasta' | parallel --gnu -j 16 mafft_file {} {/}
+echo "Running MAFFT alignment with $THREADS threads..."
+
+# Run Parallel
+# We pass output_dir as the second argument to the function
+find "$INPUT_DIR" -type f -name '*.fasta' | parallel --gnu -j "$THREADS" mafft_file {} "$OUTPUT_DIR"
+
+echo "MAFFT alignment complete."
