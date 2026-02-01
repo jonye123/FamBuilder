@@ -2,8 +2,11 @@
 
 # Usage: run_all.sh [project_name] [threads]
 
+# Exit immediately if any command fails.
+set -e
+
 # Take in inputs
-PROJECT_NAME=${1:-"my_project"}
+PROJECT_NAME=${1:-"myfam"}
 THREADS=${2:-4}
 
 # Define generic paths

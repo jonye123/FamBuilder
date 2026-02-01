@@ -1,46 +1,56 @@
 #!/bin/bash
 
+# Exit immediately if any command fails.
+set -e
+
+# Take in inputs from run_all.sh
+PROJECT_NAME="${1:-"myfam"}"
+THREADS="${2:-4}"  # This controls how many HMMs run at the same time
+
 # Define the directory containing the .fa files
-input_dir="../MSA/"
-output_dir="../grassfamHmmLib/"
-for_later="../grassHmmDatabase/"
+INPUT_DIR="../${PROJECT_NAME}MSA"     
+OUTPUT_DIR="../${PROJECT_NAME}HmmLib"
+DB_DIR="../${PROJECT_NAME}HmmDatabase"
 
-mkdir -p "$output_dir"
+# Create output directory and DB directory
+mkdir -p "$OUTPUT_DIR"
+mkdir -p "$DB_DIR"
 
-mkdir -p "$for_later"
+echo "Building HMMs for ${PROJECT_NAME} using ${THREADS} concurrent jobs..."
 
-# Array to store background process IDs and exit statuses
-declare -A hmmbuild_exit_status
+# Check for input files
+set +e
+count=$(ls "$INPUT_DIR"/*.fasta 2>/dev/null | wc -l)
+set -e
 
-# Iterate over each .fa file in the directory
-for file in "$input_dir"*.fasta; do
-    if [ -f "$file" ] && [ -r "$file" ]; then
-        # Get the base filename without the directory path and extension
-        hog_id=$(basename "$file" | grep -oP 'HOG[^_]+')
-        # Define the output file name
-        output_file="${output_dir}${hog_id}.hmm"
-        # Generate the hmm command and run it in background
-        hmmbuild -n "$hog_id" --cpu "$(nproc)" "$output_file" "$file" &
-        # Store the PID of the background process
-        pid=$!
-        echo "pid: ${pid}, hog_id: ${hog_id}"
-        # Store the PID and its exit status
-        hmmbuild_exit_status["$pid"]=$?
+if [ "$count" -eq 0 ]; then
+    echo "Error: No .fasta files found in $INPUT_DIR. Skipping build."
+    exit 1
+fi
+
+# Define worker function
+run_hmmbuild() {
+    local file="$1"
+    local output_dir="$2"
+    
+    # Extract HOG ID safely
+    local hog_id=$(basename "$file" | grep -oP 'HOG[^_]+')
+    local output_file="${output_dir}${hog_id}.hmm"
+
+    # Run HMMER (cpu 1 because 'parallel' handles the concurrency)
+    # Use 'if' to check if the command succeeded
+    if hmmbuild --cpu 1 -n "$hog_id" "$output_file" "$file" > /dev/null 2>&1; then
+        echo "Built HMM for $hog_id"
     else
-        echo "Skipped file '$file'. It does not exist or is not readable."
+        echo "Failed to build HMM for $hog_id"
+        # We return an error code so parallel knows it failed
+        return 1
     fi
-done
+}
 
-# Wait for all background processes to finish
-wait
+export -f run_hmmbuild
 
-# Check the exit status of each background process
-for pid in "${!hmmbuild_exit_status[@]}"; do
-    if [ "${hmmbuild_exit_status[$pid]}" -eq 0 ]; then
-        echo "Built HMM for ${input_dir}${pid}"
-    else
-        echo "Failed to build HMM for ${input_dir}${pid}"
-    fi
-done
+# get inputs and run the function
+find "$INPUT_DIR" -name "*.fasta" | parallel --gnu -j "$THREADS" run_hmmbuild {} "$OUTPUT_DIR"
 
 echo "All HMMs have been built."
