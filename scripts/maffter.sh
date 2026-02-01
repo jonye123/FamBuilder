@@ -1,14 +1,17 @@
 #!/bin/bash
 # Usage: ./maffter.sh [project_name] [threads]
 
-# Take in inputs
-PROJECT_NAME=${1:-"my_project"}
+# Exit immediately if any command fails.
+set -e
+
+# Take in inputs from run_all.sh
+PROJECT_NAME=${1:-"myfam"}
 THREADS=${2:-4}
 
 # Define the directory containing the .fa files
 # These are relative to where the script is run
 INPUT_DIR="../hogDirectoryFiltered"
-OUTPUT_DIR="../MSA/"
+OUTPUT_DIR="../${PROJECT_NAME}MSA/"
 
 # Create output directory
 mkdir -p "$OUTPUT_DIR"
