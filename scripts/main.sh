@@ -5,7 +5,7 @@
 
 # Define global variables
 INPUT_FILE=${1} # Input file
-PROJECT_NAME=${2:-"my_project"} # Output name/project name (Default: "my_project")
+PROJECT_NAME=${2:-"myfam"} # Output name/project name (Default: "myfam")
 THREADS=${3:-4} # Threads (Default: 4)
 
 if [[ ! -f "$INPUT_FILE" ]]; then
