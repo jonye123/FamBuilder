@@ -90,12 +90,50 @@ def calculate_stats(hog_directory, output_tsv):
     
     return pd.read_csv(output_tsv, sep='\t')
 
+def clean_genes_from_hogs(hog_directory, genes_to_remove):
+    """
+    Opens every FASTA file in hog_directory.
+    Removes sequences whose IDs are in the 'genes_to_remove' set.
+    """
+    print(f"Cleaning {len(genes_to_remove)} bad genes from FASTA files...")
+    
+    count_removed = 0
+    for filename in os.listdir(hog_directory):
+        if not filename.endswith(".fasta"): continue
+        
+        file_path = os.path.join(hog_directory, filename)
+        temp_path = file_path + ".tmp"
+        
+        modified = False
+        kept_sequences = []
+        
+        # Read and Filter
+        for record in SeqIO.parse(file_path, "fasta"):
+            # Robust ID extraction: Handle 'Species|Gene' vs 'Gene'
+            gene_id = record.id.split('|')[-1] 
+            full_id = record.id 
+
+            # Check if this gene is in our removal list
+            if gene_id in genes_to_remove or full_id in genes_to_remove:
+                modified = True
+                count_removed += 1
+            else:
+                kept_sequences.append(record)
+        
+        # Write back only if we changed something
+        if modified:
+            if len(kept_sequences) > 0:
+                SeqIO.write(kept_sequences, temp_path, "fasta")
+                os.replace(temp_path, file_path)
+            else:
+                # If we deleted ALL genes, delete the file
+                os.remove(file_path)
+
+    print(f"Removed {count_removed} sequences.")
+
 def main():
     args = get_args()
     
-    # Define paths based on Project Name
-    base_db_path = f"{args.project_name}HmmDatabase/{args.project_name}fam1"
-
     # Define grass clades from original GrassFam
     pacmad = ['Svi', 'Pvi', 'Pha', 'Msi', 'Sbi', 'Zma', 'Ecu', 'Pau']
     bop = ['Osa', 'Ogl', 'Ola', 'Lpe', 'Hvu', 'Ata', 'Tae', 'Bdi']
@@ -108,14 +146,14 @@ def main():
         
         # In the notebook, this step usually extracts sequences from N0.tsv
         # We call the helper script 'orthofinder_to_fasta'
-        if os.path.exists(args.input_orthogroups):
-            print(f"Parsing {args.input_orthogroups}...")
+        if os.path.exists(args.input):
+            print(f"Parsing {args.input}...")
             
             # Use the imported module to parse and extract
             # Note: You might need to adjust this function call depending on 
             # exactly how your orthofinder_to_fasta.py is written.
             try:
-                orthogroups = orthofinder_to_fasta.parse_orthogroups(args.input_orthogroups)
+                orthogroups = orthofinder_to_fasta.parse_orthogroups(args.input)
                 # Output to generic 'hogDirectory'
                 orthofinder_to_fasta.extract_sequences(orthogroups, "./hogDirectory")
             except AttributeError:
@@ -123,7 +161,7 @@ def main():
                 # Fallback: Create directory if it doesn't exist so stats don't crash
                 os.makedirs("hogDirectory", exist_ok=True)
         else:
-            print(f"Error: Input file {args.input_orthogroups} not found.")
+            print(f"Error: Input file {args.input} not found.")
 
     # --- ITERATION > 1: REFINEMENT ---
     else:
@@ -131,7 +169,8 @@ def main():
         
         # Look for the previous run's output
         prev_run_path = f"../HmmRun{args.iteration - 1}"
-        super_matrix_path = os.path.join(prev_run_path, base_db_path, 'superMatrix')
+        prev_db = f"{prev_run_path}/{args.project_name}HmmDatabase/{args.project_name}fam{args.iteration - 1}"
+        # super_matrix_path = os.path.join(prev_run_path, base_db_path, 'superMatrix')
         
         # Prepare the directory
         if os.path.exists("./hogDirectory"): 
@@ -142,10 +181,27 @@ def main():
              print("Copying filtered directory from previous run...")
              shutil.copytree(f"{prev_run_path}/hogDirectoryFiltered", "./hogDirectory")
         else:
-             print("Warning: Previous filtered directory not found. Starting fresh.")
-             os.makedirs("hogDirectory", exist_ok=True)
+             print("Error: Previous filtered directory not found!"); exit(1)
 
-    # --- GENERATE STATISTICS ---
+        print("Checking for genes to remove (Disagreements & Dropouts)...")
+        genes_to_remove = set()
+        
+        try:
+            sm_path = os.path.join(prev_db, 'superMatrix')
+            if os.path.exists(sm_path):
+                sm = pd.read_csv(sm_path, sep='\t')
+                # Find rows where Hog != HmmHogHit
+                bad_rows = sm[sm["Hog"] != sm["HmmHogHit"]]
+                genes_to_remove.update(bad_rows["Gene"].tolist())
+                print(f"    Found {len(bad_rows)} disagreement genes.")
+        except Exception as e:
+            print(f"Warning reading superMatrix: {e}")
+        
+        # Remove genes
+        if genes_to_remove:
+            clean_genes_from_hogs("./hogDirectory", genes_to_remove)
+
+    # Generate statistics
     print("Generating Statistics (hogMsaStats.tsv)...")
     hog_stats_df = calculate_stats("hogDirectory", "hogMsaStats.tsv")
 
@@ -153,7 +209,7 @@ def main():
         print("No HOGs found to process.")
         return
 
-    # --- FILTERING LOGIC ---
+    # Filtering logic
     print(f"Filtering HOGs (Min Species >= {args.min_species})...")
     
     output_dir = "hogDirectoryFiltered"
@@ -162,7 +218,7 @@ def main():
     count_kept = 0
     for index, row in hog_stats_df.iterrows():
         keep_file = False
-        # grass specific filtering
+        # Grass specific filtering
         if args.grass_filter:
             species_count = row['species_count']
             
