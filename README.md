@@ -1,6 +1,6 @@
-# GrassFam HMM Building Pipeline
+# FamBuilder HMM Building Pipeline
 
-This repository contains scripts for building and refining Hidden Markov Models (HMMs) for gene family classification in grasses, particularly focused on PACMAD and BOP clades.
+This repository contains scripts for building and refining Hidden Markov Models (HMMs) for gene family classification in any species.
 
 ## Overview
 
