@@ -44,15 +44,6 @@ process_file() {
     awk -v hog_id="$hog_id" '!/^#/ && !seen[$3]++ {print $3"\t"hog_id"\t"$1"\t"$5"\t"$6}' "$output_file" > "$CONFUSION_DIRECTORY/$hog_id"
 }
 
-process_file() {
-    local file="$1"
-    local hog_id=$(basename "$file" | grep -oP 'HOG[^.]+')
-    local output_file="${destination_directory}/${hog_id}"
-    echo "$hog_id"
-    hmmscan --tblout "$output_file" "$grassfam_path" "$file" &> /dev/null
-    awk -v hog_id="$hog_id" '!/^#/ && !seen[$3]++ {print $3"\t"hog_id"\t"$1"\t"$5"\t"$6}' "$output_file" > "$confusion_directory/$hog_id"
-}
-
 export -f process_file
 export destination_directory
 export grassfam_path
