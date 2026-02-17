@@ -22,7 +22,7 @@ mkdir -p "$DESTINATION_DIRECTORY"
 mkdir -p "$CONFUSION_DIRECTORY"
 
 # The HMM Database pressed in run_all.sh after building the HMM
-HMM_DB_PATH="../${PROJECT_NAME}HmmDatabase/${PROJECT_NAME}fam"
+HMM_DB_PATH="../${PROJECT_NAME}HmmDatabase/${PROJECT_NAME}fam1"
 
 # Initialize the Confusion Matrix File
 echo -e "Gene\tHog\tHmmHogHit\tE-value\tScore" > "$CONFUSION_PATH"
@@ -49,6 +49,6 @@ export destination_directory
 export grassfam_path
 export confusion_directory
 
-find "$source_directory" -type f -name '*.fasta' | parallel --gnu -j 16 process_file {} {/}
+find "$SOURCE_DIRECTORY" -type f -name '*.fasta' | parallel --gnu -j 16 process_file {} {/}
 
 cat "$confusion_directory"/* >> "$confusion_path"

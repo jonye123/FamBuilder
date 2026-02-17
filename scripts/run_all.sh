@@ -23,7 +23,7 @@ mkdir -p "$LOG_DIR"
 
 echo "Starting processes for project: $PROJECT_NAME..."
 
-# Run MAFFT (alignment) by alling maft script
+# Run MAFFT (alignment) by calling maft script
 bash maffter.sh ${PROJECT_NAME} ${THREADS} > "$LOG_DIR/maffter.log" 2> "$LOG_DIR/maffter.err"
 
 # Run HMM Builder
@@ -35,8 +35,8 @@ mkdir -p "$DB_DIR"
 
 # Check if the HMM library actually has files before trying to cat them
 if ls "$HMM_LIB_DIR"/*.hmm 1> /dev/null 2>&1; then
-    cat "$HMM_LIB_DIR"/*.hmm > "$DB_DIR/${PROJECT_NAME}fam"
-    hmmpress -f "$DB_DIR/${PROJECT_NAME}fam"
+    cat "$HMM_LIB_DIR"/*.hmm > "$DB_DIR/${PROJECT_NAME}fam1"
+    hmmpress -f "$DB_DIR/${PROJECT_NAME}fam1"
 else
     echo "Error: No .hmm files found in $HMM_LIB_DIR"
     exit 1

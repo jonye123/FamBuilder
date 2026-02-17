@@ -5,7 +5,7 @@ import shutil
 import statistics
 from Bio import SeqIO
 
-# Check that orthofinder_to_fast is available
+# Check that orthofinder_to_fasta is available
 try:
     import orthofinder_to_fasta
 except ImportError:
@@ -14,6 +14,7 @@ except ImportError:
 def get_args():
     parser = argparse.ArgumentParser(description="Filter HOGs and generate stats.")
     parser.add_argument("--input", required=True, help="Path to N0.tsv (or input file)")
+    parser.add_argument("--fasta_dir", help="Directory containing original proteome FASTA files")
     parser.add_argument("--project_name", required=True, help="Name of the project (e.g., FungiFam, GrassFam)")
     parser.add_argument("--iteration", type=int, required=True, help="Current iteration number")
     parser.add_argument("--min_species", type=int, default=4, help="Minimum number of species required to keep a HOG")
@@ -155,7 +156,7 @@ def main():
             try:
                 orthogroups = orthofinder_to_fasta.parse_orthogroups(args.input)
                 # Output to generic 'hogDirectory'
-                orthofinder_to_fasta.extract_sequences(orthogroups, "./hogDirectory")
+                orthofinder_to_fasta.extract_sequences(orthogroups, args.fasta_dir, "./hogDirectory")
             except AttributeError:
                 print("Error: Could not call methods from orthofinder_to_fasta. Make sure the file exists and has 'parse_orthogroups' and 'extract_sequences' functions.")
                 # Fallback: Create directory if it doesn't exist so stats don't crash
@@ -169,7 +170,8 @@ def main():
         
         # Look for the previous run's output
         prev_run_path = f"../HmmRun{args.iteration - 1}"
-        prev_db = f"{prev_run_path}/{args.project_name}HmmDatabase/{args.project_name}fam{args.iteration - 1}"
+        # prev_db = f"{prev_run_path}/{args.project_name}HmmDatabase/{args.project_name}fam{args.iteration - 1}"
+        prev_db = f"{prev_run_path}/{args.project_name}HmmDatabase/{args.project_name}fam1"
         # super_matrix_path = os.path.join(prev_run_path, base_db_path, 'superMatrix')
         
         # Prepare the directory
