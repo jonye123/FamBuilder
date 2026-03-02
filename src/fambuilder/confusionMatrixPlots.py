@@ -3,8 +3,6 @@
 import os
 import sys
 import argparse
-import shutil
-
 import numpy as np
 import pandas as pd
 from Bio import SeqIO
@@ -240,59 +238,6 @@ def find_dropped_genes(gene_info_df, filtered_confusion_df, output_path):
     return dropped_df
 
 
-# ---------------------------------------------------------------------------
-# Step 6: Set up next iteration directory
-# ---------------------------------------------------------------------------
-
-def setup_next_iteration(current_dir, scripts_source_dir, iteration):
-    """
-    Create the next iteration directory and copy scripts and pipeline
-    Python files into it, ready for the next run.
-    """
-    pwd_parts = current_dir.split("/")
-    base_name = pwd_parts[-1]
-
-    import re
-    match = re.search(r"(\d+)$", base_name)
-    if not match:
-        print("Warning: Could not determine next iteration directory name. Skipping setup.")
-        return
-
-    next_suffix = iteration + 1
-    next_dir = "/".join(pwd_parts[:-1]) + "/" + re.sub(r"\d+$", str(next_suffix), base_name)
-
-    print(f"Setting up next iteration directory: '{next_dir}'...")
-
-    try:
-        os.makedirs(next_dir, exist_ok=True)
-        os.makedirs(os.path.join(next_dir, "bashScripts"), exist_ok=True)
-        os.makedirs(os.path.join(next_dir, "bashScripts", "bashLogs"), exist_ok=True)
-    except Exception as e:
-        print(f"Warning: Could not create next iteration directory: {e}")
-        return
-
-    # Copy shell scripts
-    if os.path.exists(scripts_source_dir):
-        for f in os.listdir(scripts_source_dir):
-            if f.endswith(".sh"):
-                try:
-                    shutil.copy(
-                        os.path.join(scripts_source_dir, f),
-                        os.path.join(next_dir, "bashScripts")
-                    )
-                except Exception as e:
-                    print(f"Warning: Could not copy '{f}': {e}")
-
-    # Copy Python pipeline scripts
-    for f in os.listdir(current_dir):
-        if f.endswith(".py"):
-            try:
-                shutil.copy(os.path.join(current_dir, f), next_dir)
-            except Exception as e:
-                print(f"Warning: Could not copy '{f}': {e}")
-
-    print(f"Next iteration directory ready at '{next_dir}'.")
-
 
 # ---------------------------------------------------------------------------
 # Main
@@ -359,12 +304,6 @@ def main():
         os.path.join(db_path, "dropped")
     )
 
-    # Step 6: Set up next iteration directory
-    setup_next_iteration(
-        current_dir=os.getcwd(),
-        scripts_source_dir="bashScripts",
-        iteration=args.iteration
-    )
 
     print("confusionMatrixPlots complete.")
 
