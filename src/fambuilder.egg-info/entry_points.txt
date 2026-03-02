@@ -1,0 +1,2 @@
+[console_scripts]
+fambuilder = fambuilder.main:main

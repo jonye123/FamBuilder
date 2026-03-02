@@ -1,0 +1,57 @@
+# ---------------------------------------------------------------------------
+# FamBuilder Configuration File
+# ---------------------------------------------------------------------------
+# Usage: fambuilder --config config.yaml
+# ---------------------------------------------------------------------------
+
+# --- Required ---
+
+# Name of the project. Used to name output directories and files.
+# Examples: GrassFam, FungiFam, InsectFam
+project_name: MyProject
+
+# Path to the OrthoFinder N0.tsv hierarchical orthogroups file
+input: /path/to/N0.tsv
+
+# Directory containing per-species proteome FASTA files
+# Sequence IDs must follow the format: SpeciesCode|GeneID
+# Example: Osa|Os01g0100100
+fasta_dir: /path/to/proteomes/
+
+# --- Filtering ---
+
+# Minimum number of species a HOG must contain to be kept
+# Ignored if grass_filter is true
+min_species: 4
+
+# Apply grass-specific BOP/PACMAD coverage rules instead of min_species
+# Only use this if your species set includes the 16 grass species from GrassFam
+grass_filter: false
+
+# --- Pipeline ---
+
+# Number of parallel jobs for MAFFT, hmmbuild, and hmmscan
+jobs: 8
+
+# Conda/mamba/micromamba environment to activate before running shell scripts
+# Leave empty if your environment is already active
+conda_env: ""
+
+# IQR multiplier for HMM score outlier filtering in confusionMatrixPlots
+# Higher values = less aggressive filtering
+# Recommended range: 1.5 - 5.0 (default: 3.5)
+iqr_multiplier: 3.5
+
+# --- Convergence ---
+
+# Maximum number of iterations before stopping
+max_iterations: 15
+
+# Stop when % error change between iterations falls below this threshold
+convergence_threshold: 0.000001
+
+# --- Output ---
+
+# Delete intermediate HmmRun{N} directories after successful completion
+# Set to false if you want to keep intermediate results for debugging
+cleanup: true
