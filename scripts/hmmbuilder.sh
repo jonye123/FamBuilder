@@ -8,13 +8,16 @@ PROJECT_NAME="${1:-"myfam"}"
 THREADS="${2:-4}"  # This controls how many HMMs run at the same time
 
 # Define the directory containing the .fa files
-INPUT_DIR="../${PROJECT_NAME}MSA"     
-OUTPUT_DIR="../${PROJECT_NAME}HmmLib"
-DB_DIR="../${PROJECT_NAME}HmmDatabase"
+# --- PATHS (Synced with Master Path List) ---
+INPUT_DIR="hogMsaDir"      # Created by maffter.sh
+OUTPUT_DIR="${PROJECT_NAME}HmmLib/"
+# INPUT_DIR="../${PROJECT_NAME}MSA"     
+# OUTPUT_DIR="../${PROJECT_NAME}HmmLib"
+# DB_DIR="../${PROJECT_NAME}HmmDatabase"
 
 # Create output directory and DB directory
 mkdir -p "$OUTPUT_DIR"
-mkdir -p "$DB_DIR"
+# mkdir -p "$DB_DIR"
 
 echo "Building HMMs for ${PROJECT_NAME} using ${THREADS} concurrent jobs..."
 

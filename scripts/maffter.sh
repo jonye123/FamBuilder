@@ -10,8 +10,9 @@ THREADS=${2:-4}
 
 # Define the directory containing the .fa files
 # These are relative to where the script is run
-INPUT_DIR="../hogDirectoryFiltered"
-OUTPUT_DIR="../${PROJECT_NAME}MSA/"
+INPUT_DIR="hogDirectoryFiltered"
+OUTPUT_DIR="hogMsaDir/"
+# OUTPUT_DIR="../${PROJECT_NAME}MSA/"
 
 # Create output directory
 mkdir -p "$OUTPUT_DIR"

@@ -11,8 +11,8 @@ THREADS=${2:-4}
 
 # Define generic paths
 LOG_DIR="bashLogs"
-HMM_LIB_DIR="../${PROJECT_NAME}HmmLib"
-DB_DIR="../${PROJECT_NAME}HmmDatabase"
+HMM_LIB_DIR="${PROJECT_NAME}HmmLib"
+DB_DIR="${PROJECT_NAME}HmmDatabase"
 
 # Create log directory
 mkdir -p "$LOG_DIR"

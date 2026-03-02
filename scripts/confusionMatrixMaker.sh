@@ -45,10 +45,10 @@ process_file() {
 }
 
 export -f process_file
-export destination_directory
-export grassfam_path
-export confusion_directory
+export DESTINATION_DIRECTORY
+export CONFUSION_DIRECTORY
+export HMM_DB_PATH
 
-find "$SOURCE_DIRECTORY" -type f -name '*.fasta' | parallel --gnu -j 16 process_file {} {/}
+find "$SOURCE_DIRECTORY" -type f -name '*.fasta' | parallel --gnu -j $THREADS process_file {} {/}
 
 cat "$confusion_directory"/* >> "$confusion_path"
