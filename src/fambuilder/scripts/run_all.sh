@@ -132,7 +132,8 @@ if [[ $? -ne 0 ]]; then
 fi
 
 # Verify HMMs were built
-if [[ -z "$(ls -A "$hmm_lib_dir"/*.hmm 2>/dev/null)" ]]; then
+hmm_count=$(find "$hmm_lib_dir" -name "*.hmm" | wc -l)
+if [[ "$hmm_count" -eq 0 ]]; then
     echo "Error: No HMM files produced in '$hmm_lib_dir'."
     exit 1
 fi
@@ -141,10 +142,14 @@ echo "HMM building complete."
 # --- Step 3: Press HMM library ---
 echo ""
 echo "[3/4] Pressing HMM library..."
-hmm_count=$(ls "$hmm_lib_dir"/*.hmm | wc -l)
+
+# Remove existing hmmpress index files if they exist
+rm -f "${hmm_lib}.h3f" "${hmm_lib}.h3i" "${hmm_lib}.h3m" "${hmm_lib}.h3p"
+
+hmm_count=$(find "$hmm_lib_dir" -name "*.hmm" | wc -l)
 echo "Concatenating $hmm_count HMM files..."
 
-cat "$hmm_lib_dir"/*.hmm > "$hmm_lib"
+find "$hmm_lib_dir" -name "*.hmm" | xargs cat > "$hmm_lib"
 
 if [[ ! -s "$hmm_lib" ]]; then
     echo "Error: HMM library '$hmm_lib' is empty after concatenation."
