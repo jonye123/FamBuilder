@@ -7,7 +7,7 @@
 # --- Required ---
 
 # Name of the project. Used to name output directories and files.
-# Examples: GrassFam, FungiFam, InsectFam
+# Examples: GrassFam, JellyFam, FungiFam, InsectFam
 project_name: MyProject
 
 # Path to the OrthoFinder N0.tsv hierarchical orthogroups file
