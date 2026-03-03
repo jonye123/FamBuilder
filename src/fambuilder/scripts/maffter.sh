@@ -1,119 +1,176 @@
 #!/bin/bash
 set -e
 
-# maffter.sh - Run MAFFT alignment on HOG FASTA files
-# Skips HOGs whose FASTA hasn't changed since the previous iteration (MSA caching)
+# ---------------------------------------------------------------------------
+# maffter.sh
+# Run MAFFT alignments on HOG FASTA files.
+# Implements MSA caching — if a HOG's FASTA hasn't changed since the previous
+# iteration, the existing MSA is copied instead of rerunning MAFFT.
 #
-# Usage: bash maffter.sh --input_dir <path> --output_dir <path> --jobs <n> [--prev_input_dir <path>] [--prev_msa_dir <path>]
-
+# Part of the FamBuilder pipeline.
+#
+# Usage:
+#   bash maffter.sh \
+#       --input_dir <hogDirectoryFiltered> \
+#       --output_dir <MSA_dir> \
+#       --jobs <n> \
+#       [--prev_msa_dir <previous_MSA_dir>] \
+#       [--prev_checksum_file <previous_checksum_file>]
 # ---------------------------------------------------------------------------
-# Argument parsing
-# ---------------------------------------------------------------------------
 
+# --- Argument parsing ---
 input_dir=""
 output_dir=""
 jobs=8
-prev_input_dir=""
 prev_msa_dir=""
+prev_checksum_file=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --input_dir)    input_dir="$2";     shift 2 ;;
-        --output_dir)   output_dir="$2";    shift 2 ;;
-        --jobs)         jobs="$2";          shift 2 ;;
-        --prev_input_dir) prev_input_dir="$2"; shift 2 ;;
-        --prev_msa_dir)   prev_msa_dir="$2";   shift 2 ;;
-        *) echo "Unknown argument: $1"; exit 1 ;;
+        --input_dir)           input_dir="$2";           shift 2 ;;
+        --output_dir)          output_dir="$2";          shift 2 ;;
+        --jobs)                jobs="$2";                shift 2 ;;
+        --prev_msa_dir)        prev_msa_dir="$2";        shift 2 ;;
+        --prev_checksum_file)  prev_checksum_file="$2";  shift 2 ;;
+        *)
+            echo "Unknown argument: $1"
+            echo "Usage: bash maffter.sh --input_dir <dir> --output_dir <dir> --jobs <n> [--prev_msa_dir <dir>] [--prev_checksum_file <file>]"
+            exit 1
+            ;;
     esac
 done
 
-# Validate required arguments
+# --- Validate required arguments ---
 if [[ -z "$input_dir" || -z "$output_dir" ]]; then
     echo "Error: --input_dir and --output_dir are required."
     exit 1
 fi
 
 if [[ ! -d "$input_dir" ]]; then
-    echo "Error: input_dir '$input_dir' does not exist."
+    echo "Error: Input directory '$input_dir' does not exist."
+    exit 1
+fi
+
+# --- Check dependencies ---
+if ! command -v mafft &> /dev/null; then
+    echo "Error: mafft not found in PATH."
+    exit 1
+fi
+
+if ! command -v parallel &> /dev/null; then
+    echo "Error: GNU parallel not found in PATH."
+    exit 1
+fi
+
+if ! command -v md5sum &> /dev/null; then
+    echo "Error: md5sum not found in PATH."
     exit 1
 fi
 
 mkdir -p "$output_dir"
 
-echo "Running MAFFT alignments..."
-echo "  Input dir  : $input_dir"
-echo "  Output dir : $output_dir"
-echo "  Jobs       : $jobs"
-echo "  Prev input : ${prev_input_dir:-none}"
-echo "  Prev MSA   : ${prev_msa_dir:-none}"
+# --- Load previous checksums into associative array ---
+declare -A prev_checksums
+if [[ -n "$prev_checksum_file" && -f "$prev_checksum_file" ]]; then
+    echo "Loading previous checksums from '$prev_checksum_file'..."
+    while IFS=$'\t' read -r hog_id checksum; do
+        prev_checksums["$hog_id"]="$checksum"
+    done < "$prev_checksum_file"
+    echo "Loaded ${#prev_checksums[@]} previous checksums."
+fi
 
-# ---------------------------------------------------------------------------
-# MSA caching: compare checksums to detect unchanged HOGs
-# ---------------------------------------------------------------------------
+# --- Current checksum file for this iteration ---
+checksum_file="${output_dir}/msa_checksums.tsv"
+> "$checksum_file"
 
-# Build a list of FASTA files that actually need realigning
-to_align=()
-copied=0
-to_run=0
+# --- Counters ---
+count_cached=0
+count_rerun=0
 
-for fasta_file in "$input_dir"/*.fasta; do
-    [[ -f "$fasta_file" ]] || continue
+echo "--- FamBuilder maffter.sh ---"
+echo "Input dir : $input_dir"
+echo "Output dir: $output_dir"
+echo "Jobs      : $jobs"
 
-    filename=$(basename -- "$fasta_file" .fasta)
-    output_file="${output_dir}/${filename}_mafft_output.fasta"
-    cache_hit=false
+# --- Separate HOGs into cached and needs-rerun ---
+cached_list=()
+rerun_list=()
 
-    # Check if we have a previous iteration to compare against
-    if [[ -n "$prev_input_dir" && -n "$prev_msa_dir" ]]; then
-        prev_fasta="${prev_input_dir}/${filename}.fasta"
-        prev_msa="${prev_msa_dir}/${filename}_mafft_output.fasta"
+for file in "$input_dir"/*.fasta; do
+    [[ -f "$file" ]] || continue
 
-        if [[ -f "$prev_fasta" && -f "$prev_msa" ]]; then
-            # Compare checksums
-            curr_checksum=$(md5sum "$fasta_file" | awk '{print $1}')
-            prev_checksum=$(md5sum "$prev_fasta" | awk '{print $1}')
+    # Extract HOG ID — strip N0. prefix
+    basename=$(basename "$file" .fasta)
+    hog_id="${basename#N0.}"
 
-            if [[ "$curr_checksum" == "$prev_checksum" ]]; then
-                # FASTA unchanged — reuse previous MSA
-                cp "$prev_msa" "$output_file"
-                cache_hit=true
-                ((copied++)) || true
-            fi
-        fi
-    fi
+    # Compute checksum of current FASTA
+    current_checksum=$(md5sum "$file" | awk '{print $1}')
 
-    if [[ "$cache_hit" == false ]]; then
-        to_align+=("$fasta_file")
-        ((to_run++)) || true
+    # Write to current checksum file
+    echo -e "${hog_id}\t${current_checksum}" >> "$checksum_file"
+
+    # Determine expected MSA output filename
+    prev_msa="${prev_msa_dir}/${basename}_mafft_output.fasta"
+
+    # Check if we can use the cached MSA
+    if [[ -n "${prev_checksums[$hog_id]}" ]] && \
+       [[ "${prev_checksums[$hog_id]}" == "$current_checksum" ]] && \
+       [[ -n "$prev_msa_dir" ]] && \
+       [[ -f "$prev_msa" ]]; then
+        cached_list+=("$file")
+    else
+        rerun_list+=("$file")
     fi
 done
 
-echo "  Cache hits (MSA reused) : $copied"
-echo "  To align                : $to_run"
+echo "HOGs to rerun MAFFT : ${#rerun_list[@]}"
+echo "HOGs to copy (cache): ${#cached_list[@]}"
 
-# ---------------------------------------------------------------------------
-# MAFFT alignment (parallelized)
-# ---------------------------------------------------------------------------
-
-mafft_file() {
-    local file="$1"
-    local output_dir="$2"
-    local filename=$(basename -- "$file" .fasta)
-    local output_file="${output_dir}/${filename}_mafft_output.fasta"
-
-    mafft --localpair --maxiterate 1000 --anysymbol "$file" > "$output_file"
-    if [[ $? -ne 0 ]]; then
-        echo "Error: MAFFT failed for '$file'." >&2
-        exit 1
-    fi
-}
-
-export -f mafft_file
-
-if [[ ${#to_align[@]} -gt 0 ]]; then
-    printf '%s\n' "${to_align[@]}" | parallel --gnu -j "$jobs" mafft_file {} "$output_dir"
-else
-    echo "All MSAs were cached — no MAFFT runs needed."
+# --- Copy cached MSAs ---
+if [[ ${#cached_list[@]} -gt 0 ]]; then
+    echo "Copying cached MSAs..."
+    for file in "${cached_list[@]}"; do
+        basename=$(basename "$file" .fasta)
+        prev_msa="${prev_msa_dir}/${basename}_mafft_output.fasta"
+        cp "$prev_msa" "${output_dir}/${basename}_mafft_output.fasta"
+        ((count_cached++))
+    done
+    echo "Copied $count_cached cached MSAs."
 fi
 
-echo "MAFFT alignments complete."
+# --- Run MAFFT on changed/new HOGs ---
+if [[ ${#rerun_list[@]} -gt 0 ]]; then
+    echo "Running MAFFT on ${#rerun_list[@]} HOGs..."
+
+    mafft_file() {
+        local file="$1"
+        local output_dir="$2"
+        local filename
+        filename=$(basename "$file" .fasta)
+        local output_file="${output_dir}/${filename}_mafft_output.fasta"
+
+        # for final replace with mafft --localpair --maxiterate 1000 --anysymbol "$file" > "$output_file"
+        if mafft --auto --anysymbol "$file" > "$output_file" 2>/dev/null; then
+            echo "Done: $filename"
+        else
+            echo "Error: MAFFT failed for $filename"
+            return 1
+        fi
+    }
+
+    export -f mafft_file
+
+    printf '%s\n' "${rerun_list[@]}" | \
+        parallel --gnu \
+                 -j "$jobs" \
+                 --halt soon,fail=1 \
+                 --joblog "${output_dir}/mafft.joblog" \
+                 mafft_file {} "$output_dir"
+
+    count_rerun=${#rerun_list[@]}
+    echo "MAFFT complete for $count_rerun HOGs."
+fi
+
+echo ""
+echo "MSA checksums written to '$checksum_file'."
+echo "--- maffter.sh finished: $count_cached cached, $count_rerun rerun ---"

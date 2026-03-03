@@ -196,7 +196,7 @@ def run_hog_filter(run_dir, config, iteration):
     """Run hogFilter.py for the current iteration."""
     cmd = [
         sys.executable,
-        os.path.join(run_dir, "hogFilter.py"),
+        "hogFilter.py",
         "--input", os.path.basename(config["input"]),
         "--project_name", config["project_name"],
         "--iteration", str(iteration),
@@ -256,7 +256,7 @@ def run_confusion_matrix_plots(run_dir, config, iteration):
     """Run confusionMatrixPlots.py for the current iteration."""
     cmd = [
         sys.executable,
-        os.path.join(run_dir, "confusionMatrixPlots.py"),
+        "confusionMatrixPlots.py",
         "--project_name", config["project_name"],
         "--iteration", str(iteration),
         "--iqr_multiplier", str(config["iqr_multiplier"]),
