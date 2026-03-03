@@ -89,7 +89,6 @@ build_hmm() {
 }
 
 export -f build_hmm
-export output_dir
 
 # --- Run in parallel using GNU parallel ---
 # --halt soon,fail=1 stops all jobs if any fail
