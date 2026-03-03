@@ -377,6 +377,12 @@ def finalize(run_dir, config, iteration):
             with open(os.path.join(hmm_lib_dir, hmm_file)) as in_f:
                 out_f.write(in_f.read())
 
+    # Remove existing hmmpress index files if they exist
+    for ext in [".h3f", ".h3i", ".h3m", ".h3p"]:
+        index_file = hmm_lib + ext
+        if os.path.exists(index_file):
+            os.remove(index_file)
+            
     result = subprocess.run(["hmmpress", hmm_lib])
     if result.returncode != 0:
         print("Error: hmmpress failed during finalization.")
