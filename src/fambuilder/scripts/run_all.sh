@@ -23,25 +23,23 @@ set -e
 project_name=""
 jobs=8
 conda_env=""
+prev_msa_dir=""
+prev_checksum_file=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --project_name) project_name="$2"; shift 2 ;;
-        --jobs)         jobs="$2";         shift 2 ;;
-        --conda_env)    conda_env="$2";    shift 2 ;;
+        --project_name)        project_name="$2";        shift 2 ;;
+        --jobs)                jobs="$2";                shift 2 ;;
+        --conda_env)           conda_env="$2";           shift 2 ;;
+        --prev_msa_dir)        prev_msa_dir="$2";        shift 2 ;;
+        --prev_checksum_file)  prev_checksum_file="$2";  shift 2 ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: bash run_all.sh --project_name <name> --jobs <n> --conda_env <env>"
+            echo "Usage: bash run_all.sh --project_name <name> --jobs <n> --conda_env <env> [--prev_msa_dir <dir>] [--prev_checksum_file <file>]"
             exit 1
             ;;
     esac
 done
-
-# --- Validate arguments ---
-if [[ -z "$project_name" ]]; then
-    echo "Error: --project_name is required."
-    exit 1
-fi
 
 # --- Activate conda environment if specified ---
 if [[ -n "$conda_env" ]]; then
