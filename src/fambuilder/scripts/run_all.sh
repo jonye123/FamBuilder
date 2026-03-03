@@ -95,7 +95,8 @@ echo "HMM lib dir : $hmm_lib_dir"
 echo "DB dir      : $db_dir"
 
 # --- Step 1: MAFFT alignment ---
-echo ""
+echo "deez nuts"
+'''
 echo "[1/4] Running MAFFT alignments..."
 bash "${scripts_dir}/maffter.sh" \
     --input_dir "$hog_dir" \
@@ -109,7 +110,7 @@ if [[ $? -ne 0 ]]; then
     echo "Error: maffter.sh failed. Check '$log_dir/maffter.err'."
     exit 1
 fi
-
+'''
 # Verify MSA output exists
 if [[ -z "$(ls -A "$msa_dir" 2>/dev/null)" ]]; then
     echo "Error: No MSA files produced in '$msa_dir'."
