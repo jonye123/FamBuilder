@@ -424,7 +424,7 @@ def finalize(run_dir, config, iteration):
 def cleanup_intermediate_dirs(final_iteration):
     """Delete all HmmRun{N} directories after successful completion."""
     print("Cleaning up intermediate directories...")
-    for i in range(1, final_iteration + 1):
+    for i in range(1, final_iteration):
         run_dir = f"HmmRun{i}"
         if os.path.exists(run_dir):
             shutil.rmtree(run_dir)

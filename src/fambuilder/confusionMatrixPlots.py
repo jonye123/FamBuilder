@@ -58,6 +58,9 @@ def filter_confusion_matrix(confusion_matrix_path, output_path, iqr_multiplier):
     and write filtered_confusion_df.
     Returns the filtered DataFrame.
     """
+    import warnings
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    
     print(f"Reading confusion matrix from '{confusion_matrix_path}'...")
     confusion_df = pd.read_csv(confusion_matrix_path, sep="\t")
 
@@ -65,7 +68,7 @@ def filter_confusion_matrix(confusion_matrix_path, output_path, iqr_multiplier):
     filtered_df = (
         confusion_df
         .groupby("HmmHogHit", group_keys=False)
-        .apply(lambda g: calculate_quartiles_and_filter(g, iqr_multiplier))
+        .apply(lambda g: calculate_quartiles_and_filter(g, iqr_multiplier), include_groups=True)
         .reset_index(drop=True)
     )
 
