@@ -132,7 +132,7 @@ if [[ ${#cached_list[@]} -gt 0 ]]; then
         basename=$(basename "$file" .fasta)
         prev_msa="${prev_msa_dir}/${basename}_mafft_output.fasta"
         cp "$prev_msa" "${output_dir}/${basename}_mafft_output.fasta"
-        ((count_cached++))
+        count_cached=$((count_cached + 1))
     done
     echo "Copied $count_cached cached MSAs."
 fi
