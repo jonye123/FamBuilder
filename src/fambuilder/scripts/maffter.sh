@@ -69,15 +69,13 @@ fi
 
 mkdir -p "$output_dir"
 
-# --- Load previous checksums into associative array ---
-declare -A prev_checksums
-if [[ -n "$prev_checksum_file" && -f "$prev_checksum_file" ]]; then
-    echo "Loading previous checksums from '$prev_checksum_file'..."
-    while IFS=$'\t' read -r hog_id checksum; do
-        prev_checksums["$hog_id"]="$checksum"
-    done < "$prev_checksum_file"
-    echo "Loaded ${#prev_checksums[@]} previous checksums."
-fi
+# --- Helper: look up previous checksum for a HOG ID using grep ---
+get_prev_checksum() {
+    local hog_id="$1"
+    if [[ -n "$prev_checksum_file" && -f "$prev_checksum_file" ]]; then
+        grep -m1 "^${hog_id}	" "$prev_checksum_file" | cut -f2
+    fi
+}
 
 # --- Current checksum file for this iteration ---
 checksum_file="${output_dir}/msa_checksums.tsv"
@@ -113,8 +111,9 @@ for file in "$input_dir"/*.fasta; do
     prev_msa="${prev_msa_dir}/${basename}_mafft_output.fasta"
 
     # Check if we can use the cached MSA
-    if [[ -n "${prev_checksums[$hog_id]}" ]] && \
-       [[ "${prev_checksums[$hog_id]}" == "$current_checksum" ]] && \
+    prev_checksum=$(get_prev_checksum "$hog_id")
+    if [[ -n "$prev_checksum" ]] && \
+       [[ "$prev_checksum" == "$current_checksum" ]] && \
        [[ -n "$prev_msa_dir" ]] && \
        [[ -f "$prev_msa" ]]; then
         cached_list+=("$file")
@@ -149,7 +148,6 @@ if [[ ${#rerun_list[@]} -gt 0 ]]; then
         filename=$(basename "$file" .fasta)
         local output_file="${output_dir}/${filename}_mafft_output.fasta"
 
-        # for final replace with mafft --localpair --maxiterate 1000 --anysymbol "$file" > "$output_file"
         if mafft --auto --anysymbol "$file" > "$output_file" 2>/dev/null; then
             echo "Done: $filename"
         else
