@@ -149,6 +149,7 @@ if [[ ${#rerun_list[@]} -gt 0 ]]; then
         local output_file="${output_dir}/${filename}_mafft_output.fasta"
 
         if mafft --auto --anysymbol "$file" > "$output_file" 2>/dev/null; then
+        # if mafft --localpair --maxiterate 1000 --anysymbol "$file" > "$output_file" 2>/dev/null; then <-- use for most precise mafft
             echo "Done: $filename"
         else
             echo "Error: MAFFT failed for $filename"

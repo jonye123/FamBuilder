@@ -71,7 +71,7 @@ hmm_lib_dir="${run_dir}/${project_name}HmmLib"
 db_dir="${run_dir}/${project_name}HmmDatabase/${project_name}fam1"
 hmm_lib="${run_dir}/${project_name}HmmDatabase/${project_name}"
 scripts_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-log_dir="${scripts_dir}/bashLogs"
+log_dir="${run_dir}/logs"
 
 mkdir -p "$log_dir"
 mkdir -p "$db_dir"
