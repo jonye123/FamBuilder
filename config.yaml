@@ -28,6 +28,11 @@ min_species: 4
 # Only use this if your species set includes the 16 grass species from GrassFam
 grass_filter: false
 
+# Minimum number of taxonomic groups that must be represented in a HOG
+# Groups are defined in TAXONOMIC_GROUPS in hogFilter.py
+# Set to 0 to disable group-aware filtering (uses min_species only)
+min_groups: 0
+
 # --- Pipeline ---
 
 # Number of parallel jobs for MAFFT, hmmbuild, and hmmscan

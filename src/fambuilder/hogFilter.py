@@ -38,6 +38,10 @@ def get_args():
     parser.add_argument("--grass_filter", action="store_true",
                         help="Apply grass-specific BOP/PACMAD coverage rules "
                              "instead of the generic min_species filter")
+    parser.add_argument("--min_groups", type=int, default=0,
+                        help="Minimum number of taxonomic groups represented in a HOG. "
+                             "Used together with --min_species for group-aware filtering. "
+                             "Groups are defined in TAXONOMIC_GROUPS in hogFilter.py (default: 0, disabled)")
     parser.add_argument("--jobs", type=int, default=8,
                         help="(Informational) Number of parallel jobs — passed through "
                              "to shell scripts by main.sh")
@@ -265,8 +269,25 @@ def split_and_clean_hogs(hog_directory, gene_and_hog_to_remove, zeros_to_remove)
 PACMAD = ["Svi", "Pvi", "Pha", "Msi", "Sbi", "Zma", "Ecu", "Pau"]
 BOP = ["Osa", "Ogl", "Ola", "Lpe", "Hvu", "Ata", "Tae", "Bdi"]
 
+# Taxonomic groups for group-aware filtering.
+# Edit these to match your species set.
+TAXONOMIC_GROUPS = {
+    "bil": ["Bla", "Lva", "Llo", "Pma"],
+    "cni": ["Hsy", "Hvu", "Nve", "Pve"],
+    "por": ["Sci", "Olo", "Hpa", "Emu"],
+    "cte": ["Mle", "Bmi"],
+}
 
-def passes_filter(row, min_species, grass_filter):
+
+def count_groups_represented(row):
+    """Count how many taxonomic groups have at least one species present in the HOG."""
+    return sum(
+        1 for members in TAXONOMIC_GROUPS.values()
+        if any(int(row.get(s, 0)) for s in members)
+    )
+
+
+def passes_filter(row, min_species, grass_filter, min_groups=0):
     """Return True if a HOG row should be kept."""
     if grass_filter:
         species_count = row["species_count"]
@@ -277,11 +298,15 @@ def passes_filter(row, min_species, grass_filter):
             or (found_pacmad == 0 and found_bop >= 6)
             or (found_bop == 0 and found_pacmad >= 6)
         )
+    elif min_groups > 0:
+        species_ok = row["species_count"] >= min_species
+        groups_ok = count_groups_represented(row) >= min_groups
+        return species_ok and groups_ok
     else:
         return row["species_count"] >= min_species
 
 
-def copy_filtered_hogs(hog_stats_df, hog_directory, output_dir, min_species, grass_filter):
+def copy_filtered_hogs(hog_stats_df, hog_directory, output_dir, min_species, grass_filter, min_groups=0):
     """
     Copy HOG FASTA files that pass the filter into output_dir.
     Handles both N0-prefixed and plain filenames, and suffixed files (HOG001-1.fasta).
@@ -290,7 +315,7 @@ def copy_filtered_hogs(hog_stats_df, hog_directory, output_dir, min_species, gra
     count_kept = 0
 
     for _, row in hog_stats_df.iterrows():
-        if not passes_filter(row, min_species, grass_filter):
+        if not passes_filter(row, min_species, grass_filter, min_groups):
             continue
 
         hog_name = str(row["HOG"])
@@ -434,10 +459,15 @@ def main():
     # ------------------------------------------------------------------
     # Filter HOGs
     # ------------------------------------------------------------------
-    filter_mode = "grass (BOP/PACMAD)" if args.grass_filter else f"generic (min_species >= {args.min_species})"
+    if args.grass_filter:
+        filter_mode = "grass (BOP/PACMAD)"
+    elif args.min_groups > 0:
+        filter_mode = f"group-aware (min_species >= {args.min_species} && min_groups >= {args.min_groups})"
+    else:
+        filter_mode = f"generic (min_species >= {args.min_species})"
     print(f"Filtering HOGs using {filter_mode} filter...")
     copy_filtered_hogs(hog_stats_df, "./hogDirectory", "./hogDirectoryFiltered",
-                       args.min_species, args.grass_filter)
+                       args.min_species, args.grass_filter, args.min_groups)
 
     # ------------------------------------------------------------------
     # Recalculate stats for filtered set

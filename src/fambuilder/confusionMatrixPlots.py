@@ -36,6 +36,10 @@ def calculate_quartiles_and_filter(group, multiplier=3.5):
     Filter out low-scoring genes within each HMM group using IQR.
     Genes scoring below Q1 - multiplier * IQR are removed.
     """
+    # Testing using half mean
+    # mean = group["Score"].mean()
+    # lower_bound = 0.5 * mean
+
     Q1 = group["Score"].quantile(0.25)
     Q3 = group["Score"].quantile(0.75)
     IQR = Q3 - Q1

@@ -59,6 +59,7 @@ def load_config(config_path):
     # Set defaults
     config.setdefault("min_species", 4)
     config.setdefault("grass_filter", False)
+    config.setdefault("min_groups", 0)
     config.setdefault("jobs", 8)
     config.setdefault("conda_env", "")
     config.setdefault("iqr_multiplier", 3.5)
@@ -201,6 +202,7 @@ def run_hog_filter(run_dir, config, iteration):
         "--project_name", config["project_name"],
         "--iteration", str(iteration),
         "--min_species", str(config["min_species"]),
+        "--min_groups", str(config["min_groups"]),
         "--jobs", str(config["jobs"]),
     ]
 
@@ -382,7 +384,7 @@ def finalize(run_dir, config, iteration):
         index_file = hmm_lib + ext
         if os.path.exists(index_file):
             os.remove(index_file)
-            
+
     result = subprocess.run(["hmmpress", hmm_lib])
     if result.returncode != 0:
         print("Error: hmmpress failed during finalization.")
@@ -424,7 +426,7 @@ def finalize(run_dir, config, iteration):
 def cleanup_intermediate_dirs(final_iteration):
     """Delete all HmmRun{N} directories after successful completion."""
     print("Cleaning up intermediate directories...")
-    for i in range(1, final_iteration):
+    for i in range(1, final_iteration + 1):
         run_dir = f"HmmRun{i}"
         if os.path.exists(run_dir):
             shutil.rmtree(run_dir)
