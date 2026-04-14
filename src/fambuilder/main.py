@@ -58,9 +58,9 @@ def load_config(config_path):
 
     # Set defaults
     config.setdefault("min_species", 4)
-    config.setdefault("grass_filter", False)
     config.setdefault("min_groups", 0)
     config.setdefault("jobs", 8)
+    config.setdefault("taxonomic_groups", {})
     config.setdefault("conda_env", "")
     config.setdefault("iqr_multiplier", 3.5)
     config.setdefault("max_iterations", 15)
@@ -203,11 +203,9 @@ def run_hog_filter(run_dir, config, iteration):
         "--iteration", str(iteration),
         "--min_species", str(config["min_species"]),
         "--min_groups", str(config["min_groups"]),
+        "--taxonomic_groups", json.dumps(config["taxonomic_groups"]),
         "--jobs", str(config["jobs"]),
     ]
-
-    if config["grass_filter"]:
-        cmd.append("--grass_filter")
 
     if iteration == 1:
         cmd += ["--fasta_dir", config["fasta_dir"]]
@@ -426,7 +424,7 @@ def finalize(run_dir, config, iteration):
 def cleanup_intermediate_dirs(final_iteration):
     """Delete all HmmRun{N} directories after successful completion."""
     print("Cleaning up intermediate directories...")
-    for i in range(1, final_iteration + 1):
+    for i in range(1, final_iteration):
         run_dir = f"HmmRun{i}"
         if os.path.exists(run_dir):
             shutil.rmtree(run_dir)

@@ -24,14 +24,21 @@ fasta_dir: /path/to/proteomes/
 # Ignored if grass_filter is true
 min_species: 4
 
-# Apply grass-specific BOP/PACMAD coverage rules instead of min_species
-# Only use this if your species set includes the 16 grass species from GrassFam
-grass_filter: false
-
 # Minimum number of taxonomic groups that must be represented in a HOG
 # Groups are defined in TAXONOMIC_GROUPS in hogFilter.py
 # Set to 0 to disable group-aware filtering (uses min_species only)
 min_groups: 0
+
+# Taxonomic group definitions for group-aware filtering.
+# Each key is a group name, each value is a list of species codes.
+# Species codes must match the prefix used in your FASTA sequence IDs (e.g. Bla|gene1 -> Bla).
+# Only used when min_groups > 0. Leave empty ({}) to disable.
+# Example group definitions
+taxonomic_groups:
+  bil: ["Bla", "Lva", "Llo", "Pma"]
+  cni: ["Hsy", "Hvu", "Nve", "Pve"]
+  por: ["Sci", "Olo", "Hpa", "Emu"]
+  cte: ["Mle", "Bmi"]
 
 # --- Pipeline ---
 
