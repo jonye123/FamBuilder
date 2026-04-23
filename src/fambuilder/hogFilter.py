@@ -338,8 +338,8 @@ def main():
         print("Error: --fasta_dir is required for iteration 1.")
         sys.exit(1)
 
-    # Build database path using project name (replaces hardcoded 'grassHmmDatabase/grassfam1')
-    db_path = f"{args.project_name}HmmDatabase/{args.project_name}fam1"
+    # Build database path using project name
+    db_path = f"{args.project_name}HmmDatabase/{args.project_name}RunOutputs"
 
     print(f"--- FamBuilder hogFilter ---")
     print(f"Project : {args.project_name}")

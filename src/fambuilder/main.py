@@ -81,7 +81,7 @@ def load_checkpoint():
     if os.path.exists(CHECKPOINT_FILE):
         with open(CHECKPOINT_FILE, "r") as f:
             return json.load(f)
-    return {"iteration": 1, "completed_steps": [], "prev_error": None}
+    return {"iteration": 0, "completed_steps": [], "prev_error": None}
 
 
 def save_checkpoint(checkpoint):
@@ -452,14 +452,14 @@ def main():
     python_scripts_dir = get_python_scripts_dir()
 
     # Load or initialize checkpoint
-    checkpoint = load_checkpoint() if args.resume else {
-        "iteration": 1,
-        "completed_steps": [],
-        "prev_error": None
-    }
+    if args.resume:
+        checkpoint = load_checkpoint()
+        iteration = checkpoint["iteration"] + 1
+        reset_iteration_steps(checkpoint, iteration)
+    else:
+        checkpoint = {"iteration": 0, "completed_steps": [], "prev_error": None}
+        iteration = 1
     save_checkpoint(checkpoint)
-
-    iteration = checkpoint["iteration"]
     prev_error = checkpoint["prev_error"]
 
     while True:
@@ -536,8 +536,8 @@ def main():
 
         # Prepare for next iteration
         prev_error = percent_error
-        checkpoint["prev_error"] = prev_error
-        checkpoint["iteration"] = iteration + 1
+        checkpoint["prev_error"] = percent_error
+        checkpoint["iteration"] = iteration
         save_checkpoint(checkpoint)
 
         iteration += 1
