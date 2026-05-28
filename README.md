@@ -6,7 +6,7 @@ Iterative HMM-based gene family classification pipeline. Generalized from Noor M
 
 The following tools must be available in your PATH:
 
-- HMMER3 (`hmmbuild`, `hmmscan`, `hmmpress`)
+- HMMER v3.4+ (`hmmbuild`, `hmmscan`, `hmmpress`)
 - MAFFT
 - GNU Parallel
 
