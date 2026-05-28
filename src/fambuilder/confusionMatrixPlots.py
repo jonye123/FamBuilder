@@ -254,7 +254,7 @@ def main():
     args = get_args()
 
     # Build paths from project name
-    db_path = f"{args.project_name}HmmDatabase/{args.project_name}fam1"
+    db_path = f"{args.project_name}HmmDatabase/{args.project_name}Outputs"
     hog_directory = "hogDirectoryFiltered"
     hog_msa_stats_path = "hogMsaStats.tsv"
 

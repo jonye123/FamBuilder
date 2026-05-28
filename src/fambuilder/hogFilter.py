@@ -339,7 +339,7 @@ def main():
         sys.exit(1)
 
     # Build database path using project name
-    db_path = f"{args.project_name}HmmDatabase/{args.project_name}RunOutputs"
+    db_path = f"{args.project_name}HmmDatabase/{args.project_name}Outputs"
 
     print(f"--- FamBuilder hogFilter ---")
     print(f"Project : {args.project_name}")

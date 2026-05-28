@@ -285,7 +285,7 @@ def calculate_error(run_dir, config):
     db_path = os.path.join(
         run_dir,
         f"{config['project_name']}HmmDatabase",
-        f"{config['project_name']}fam1"
+        f"{config['project_name']}Outputs"
     )
 
     filtered_confusion_path = os.path.join(db_path, "filtered_confusion_df")
@@ -348,7 +348,7 @@ def finalize(run_dir, config, iteration):
     print(f"\nFinalizing from '{run_dir}'...")
 
     project_name = config["project_name"]
-    db_path = os.path.join(run_dir, f"{project_name}HmmDatabase", f"{project_name}fam1")
+    db_path = os.path.join(run_dir, f"{project_name}HmmDatabase", f"{project_name}Outputs")
     hmm_lib_dir = os.path.join(run_dir, f"{project_name}HmmLib")
     hmm_lib = os.path.join(run_dir, f"{project_name}HmmDatabase", project_name)
     disagree_matrix3 = os.path.join(db_path, "disagreeMatrix3")

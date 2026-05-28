@@ -439,7 +439,7 @@ def main():
     db_path = os.path.join(
         run_dir,
         f"{args.project_name}HmmDatabase",
-        f"{args.project_name}fam1"
+        f"{args.project_name}Outputs"
     )
 
     output_dir = args.output_dir
