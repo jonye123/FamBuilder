@@ -21,7 +21,6 @@ fasta_dir: /path/to/proteomes/
 # --- Filtering ---
 
 # Minimum number of species a HOG must contain to be kept
-# Ignored if grass_filter is true
 min_species: 4
 
 # Minimum number of taxonomic groups that must be represented in a HOG
