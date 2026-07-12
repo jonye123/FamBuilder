@@ -9,6 +9,7 @@ The following tools must be available in your PATH:
 - HMMER v3.4+ (`hmmbuild`, `hmmscan`, `hmmpress`)
 - MAFFT
 - GNU Parallel
+- seqkit (only required for `scripts/splitAndScore.sh`)
 
 ## Installation
 
@@ -43,14 +44,30 @@ cp config.yaml my_config.yaml
 3. Run the pipeline:
 
 ```bash
-fambuilder --config my_config.yaml
+fambuilder run --config my_config.yaml
 ```
 
 4. To resume after an interruption:
 
 ```bash
-fambuilder --config my_config.yaml --resume
+fambuilder run --config my_config.yaml --resume
 ```
+
+## Scoring
+
+Once a pipeline run has finished (`HMMFinal/` exists), you can score additional peptide FASTAs — e.g. a new species' proteome — against the final HMM library:
+
+```bash
+fambuilder score --config my_config.yaml --source_fasta new_species.fasta
+```
+
+This locates the library at `HMMFinal/<project_name>` using `project_name` from the config. To score against a library elsewhere, pass it directly instead:
+
+```bash
+fambuilder score --hmm_lib path/to/hmm_lib --source_fasta new_species.fasta --jobs 8
+```
+
+Optional flags: `--jobs` (parallel splitting/scanning jobs, default 8), `--split_dir`, `--output_dir`, `--confusion_dir` (default to `./split`, `./hmmerOutput`, `./catThis`).
 
 ## Config Options
 

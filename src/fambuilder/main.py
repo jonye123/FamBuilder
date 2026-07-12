@@ -19,10 +19,35 @@ def get_args():
     parser = argparse.ArgumentParser(
         description="FamBuilder: Iterative HMM-based gene family classification pipeline."
     )
-    parser.add_argument("--config", required=True,
-                        help="Path to config.yaml")
-    parser.add_argument("--resume", action="store_true",
-                        help="Resume from last checkpoint if pipeline was interrupted")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    run_parser = subparsers.add_parser(
+        "run", help="Run the iterative HMM-building pipeline."
+    )
+    run_parser.add_argument("--config", required=True,
+                             help="Path to config.yaml")
+    run_parser.add_argument("--resume", action="store_true",
+                             help="Resume from last checkpoint if pipeline was interrupted")
+
+    score_parser = subparsers.add_parser(
+        "score", help="Score a peptide FASTA against a built HMM library."
+    )
+    score_parser.add_argument("--config",
+                               help="Path to config.yaml, used to locate HMMFinal/<project_name> "
+                                    "if --hmm_lib is not given")
+    score_parser.add_argument("--hmm_lib",
+                               help="Path to a pressed HMM library (overrides --config lookup)")
+    score_parser.add_argument("--source_fasta", required=True,
+                               help="Peptide FASTA to score (e.g. a new species proteome)")
+    score_parser.add_argument("--jobs", type=int, default=8,
+                               help="Parallel jobs for splitting/scanning")
+    score_parser.add_argument("--split_dir",
+                               help="Directory for split FASTA chunks (default: ./split)")
+    score_parser.add_argument("--output_dir",
+                               help="Directory for raw hmmscan output (default: ./hmmerOutput)")
+    score_parser.add_argument("--confusion_dir",
+                               help="Directory for per-chunk confusion rows (default: ./catThis)")
+
     return parser.parse_args()
 
 
@@ -68,6 +93,24 @@ def load_config(config_path):
     config.setdefault("cleanup", True)
 
     return config
+
+
+def get_project_name(config_path):
+    """Read just the project_name field out of a config.yaml, without the
+    full load_config validation (which requires the original input/fasta_dir
+    to still exist on disk — not a given once scoring happens later)."""
+    if not os.path.exists(config_path):
+        print(f"Error: Config file '{config_path}' not found.")
+        sys.exit(1)
+
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+
+    if "project_name" not in config:
+        print(f"Error: Required field 'project_name' missing from config.")
+        sys.exit(1)
+
+    return config["project_name"]
 
 
 # ---------------------------------------------------------------------------
@@ -249,6 +292,44 @@ def run_all_sh(run_dir, config, iteration):
     result = subprocess.run(cmd, cwd=bash_scripts_dir)
     if result.returncode != 0:
         print(f"Error: run_all.sh failed in iteration {iteration}.")
+        sys.exit(1)
+
+
+def run_score(args, scripts_dir):
+    """Score a peptide FASTA against a pressed HMM library via splitAndScore.sh."""
+    hmm_lib = args.hmm_lib
+    if not hmm_lib:
+        if not args.config:
+            print("Error: --hmm_lib or --config is required for the score command.")
+            sys.exit(1)
+        project_name = get_project_name(args.config)
+        hmm_lib = os.path.join("HMMFinal", project_name)
+
+    if not os.path.exists(hmm_lib):
+        print(f"Error: HMM library '{hmm_lib}' not found.")
+        sys.exit(1)
+
+    if not os.path.exists(args.source_fasta):
+        print(f"Error: Source FASTA '{args.source_fasta}' not found.")
+        sys.exit(1)
+
+    cmd = [
+        "bash", os.path.join(scripts_dir, "splitAndScore.sh"),
+        "--source_fasta", args.source_fasta,
+        "--hmm_lib", hmm_lib,
+        "--jobs", str(args.jobs),
+    ]
+    if args.split_dir:
+        cmd += ["--split_dir", args.split_dir]
+    if args.output_dir:
+        cmd += ["--output_dir", args.output_dir]
+    if args.confusion_dir:
+        cmd += ["--confusion_dir", args.confusion_dir]
+
+    print(f"Scoring '{args.source_fasta}' against HMM library '{hmm_lib}'...")
+    result = subprocess.run(cmd)
+    if result.returncode != 0:
+        print("Error: scoring failed.")
         sys.exit(1)
 
 
@@ -437,6 +518,12 @@ def cleanup_intermediate_dirs(final_iteration):
 
 def main():
     args = get_args()
+
+    if args.command == "score":
+        scripts_dir = get_scripts_dir()
+        run_score(args, scripts_dir)
+        return
+
     config = load_config(args.config)
 
     print("--- FamBuilder ---")

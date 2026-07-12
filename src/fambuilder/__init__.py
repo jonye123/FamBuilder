@@ -3,8 +3,9 @@ FamBuilder: Iterative HMM-based gene family classification pipeline.
 Generalized from Noor Mashiana's GrassFam.
 
 Usage:
-    fambuilder --config config.yaml
-    fambuilder --config config.yaml --resume
+    fambuilder run --config config.yaml
+    fambuilder run --config config.yaml --resume
+    fambuilder score --config config.yaml --source_fasta new_species.fasta
 
 Modules:
     main                  - Pipeline orchestrator and entry point
