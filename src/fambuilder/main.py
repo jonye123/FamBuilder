@@ -63,6 +63,11 @@ def get_args():
         "occurrence", help="Plot an OrthoVenn3-style presence/absence pattern plot from an OrthoFinder table. "
                             "Run 'fambuilder occurrence --help' for its full argument list.",
     )
+    subparsers.add_parser(
+        "ortho-table", help="Convert a scoring confusion table (e.g. 'fambuilder score' output) into an "
+                             "OrthoFinder-style Orthogroup-by-species table for use with figures/heatmap/occurrence. "
+                             "Run 'fambuilder ortho-table --help' for its full argument list.",
+    )
 
     return parser.parse_args()
 
@@ -74,6 +79,7 @@ PLOT_COMMANDS = {
     "figures": "figures.py",
     "heatmap": "heatmaps.py",
     "occurrence": "occurrence.py",
+    "ortho-table": "ofTableMaker.py",
 }
 
 

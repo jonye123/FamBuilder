@@ -69,6 +69,17 @@ fambuilder score --hmm_lib path/to/hmm_lib --source_fasta new_species.fasta --jo
 
 Optional flags: `--jobs` (parallel splitting/scanning jobs, default 8), `--split_dir`, `--output_dir`, `--confusion_dir` (default to `./split`, `./hmmerOutput`, `./catThis`).
 
+### Converting scoring output to an OrthoFinder table
+
+`fambuilder score` writes one confusion file per species chunk under `./catThis/` (tab-separated, no header: `Gene`, `Species`, `HmmHogHit`, `E-value`, `Score`). The plotting commands below expect an OrthoFinder-style table instead (an `Orthogroup` column plus one column per species). `ortho-table` converts between the two:
+
+```bash
+cat catThis/* > all_confusion.tsv
+fambuilder ortho-table all_confusion.tsv Orthogroups.tsv
+```
+
+By default it drops any hit with `log10(E-value) > -23`; pass `--no-threshold` to keep everything, or `--evalue_threshold` to set your own cutoff. By default all hits for a given `(Orthogroup, Species)` pair are comma-joined into one cell; pass `--best` to keep only the single lowest-E-value gene instead. Pass `--header` if your input file already has a header row (e.g. `confusionMatrixMaker.sh`'s `confusionMatrix` output), and `--extractspecies` if species should be parsed from the `SpeciesCode|GeneID`-style `Gene` column rather than read from a `Species` column. Run `fambuilder ortho-table --help` for the full flag list.
+
 ## Plotting
 
 Three standalone plotting commands work directly on an OrthoFinder table (`Orthogroups.tsv` or a HOG table like `N0.tsv`) — no FamBuilder run required. They require the `plots` extra (`pip install fambuilder[plots]`). Each forwards its arguments to its own script, so run any of them with `--help` for the full flag list.
