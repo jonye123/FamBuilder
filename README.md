@@ -69,6 +69,34 @@ fambuilder score --hmm_lib path/to/hmm_lib --source_fasta new_species.fasta --jo
 
 Optional flags: `--jobs` (parallel splitting/scanning jobs, default 8), `--split_dir`, `--output_dir`, `--confusion_dir` (default to `./split`, `./hmmerOutput`, `./catThis`).
 
+## Plotting
+
+Three standalone plotting commands work directly on an OrthoFinder table (`Orthogroups.tsv` or a HOG table like `N0.tsv`) — no FamBuilder run required. They require the `plots` extra (`pip install fambuilder[plots]`). Each forwards its arguments to its own script, so run any of them with `--help` for the full flag list.
+
+**`figures`** — genes-per-family and species-per-family histograms:
+
+```bash
+fambuilder figures Orthogroups.tsv --clade my_clade --min_species 4
+```
+
+Writes `<clade>_genes_per_family_hist.png` and `<clade>_species_per_family_hist.png` (`output_*` if `--clade` is omitted).
+
+**`heatmap`** — species-presence heatmap comparing the two root clades of a Newick tree:
+
+```bash
+fambuilder heatmap Orthogroups.tsv tree.nwk --clade1 GroupA --clade2 GroupB
+```
+
+Writes `<clade1>_vs_<clade2>_heatmap.png` (or the path given via `-o/--output`).
+
+**`occurrence`** — OrthoVenn3-style presence/absence pattern plot:
+
+```bash
+fambuilder occurrence Orthogroups.tsv -n 40 --min_species 2
+```
+
+Writes `presence_absence_patterns.png` by default (`-o/--output` to change it); `--order` takes a file of species names (one per line) to fix column order, and `--tsv` optionally dumps the full pattern table.
+
 ## Config Options
 
 | Option | Required | Default | Description |

@@ -48,7 +48,33 @@ def get_args():
     score_parser.add_argument("--confusion_dir",
                                help="Directory for per-chunk confusion rows (default: ./catThis)")
 
+    # figures/heatmap/occurrence args are parsed by the underlying scripts
+    # themselves (see PLOT_COMMANDS in main()); these entries exist only so
+    # they show up in top-level --help.
+    subparsers.add_parser(
+        "figures", help="Plot genes/species-per-family histograms from an OrthoFinder table. "
+                         "Run 'fambuilder figures --help' for its full argument list.",
+    )
+    subparsers.add_parser(
+        "heatmap", help="Plot a clade-vs-clade species-presence heatmap from an OrthoFinder table and tree. "
+                         "Run 'fambuilder heatmap --help' for its full argument list.",
+    )
+    subparsers.add_parser(
+        "occurrence", help="Plot an OrthoVenn3-style presence/absence pattern plot from an OrthoFinder table. "
+                            "Run 'fambuilder occurrence --help' for its full argument list.",
+    )
+
     return parser.parse_args()
+
+
+# Top-level command -> bundled script forwarded straight to the script's own
+# argparse, bypassing argparse subparsers entirely (nargs=REMAINDER does not
+# reliably capture a remainder that starts with a flag, e.g. '--help').
+PLOT_COMMANDS = {
+    "figures": "figures.py",
+    "heatmap": "heatmaps.py",
+    "occurrence": "occurrence.py",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -333,6 +359,19 @@ def run_score(args, scripts_dir):
         sys.exit(1)
 
 
+def run_plot_script(script_name, script_args, python_scripts_dir):
+    """Run a bundled standalone plotting script (figures.py/heatmaps.py/occurrence.py)."""
+    script_path = os.path.join(python_scripts_dir, script_name)
+    if not os.path.exists(script_path):
+        print(f"Error: Could not find bundled script '{script_name}'.")
+        sys.exit(1)
+
+    cmd = [sys.executable, script_path] + script_args
+    result = subprocess.run(cmd)
+    if result.returncode != 0:
+        sys.exit(result.returncode)
+
+
 def run_confusion_matrix_plots(run_dir, config, iteration):
     """Run confusionMatrixPlots.py for the current iteration."""
     cmd = [
@@ -517,6 +556,10 @@ def cleanup_intermediate_dirs(final_iteration):
 # ---------------------------------------------------------------------------
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] in PLOT_COMMANDS:
+        run_plot_script(PLOT_COMMANDS[sys.argv[1]], sys.argv[2:], get_python_scripts_dir())
+        return
+
     args = get_args()
 
     if args.command == "score":
