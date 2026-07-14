@@ -133,7 +133,7 @@ if [[ -z "$(ls -A "$cat_dir")" ]]; then
     exit 1
 fi
 
-cat "$cat_dir"/* >> "$confusion_path"
+find "$cat_dir" -type f -print0 | xargs -0 cat >> "$confusion_path"
 
 echo "Confusion matrix written to '$confusion_path'."
 echo "Done."
