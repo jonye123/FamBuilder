@@ -2,6 +2,7 @@
 
 import os
 import sys
+import json
 import argparse
 import shutil
 import statistics
@@ -332,6 +333,9 @@ def copy_filtered_hogs(hog_stats_df, hog_directory, output_dir, min_species, min
 
 def main():
     args = get_args()
+
+    global TAXONOMIC_GROUPS
+    TAXONOMIC_GROUPS = json.loads(args.taxonomic_groups)
 
     # Validate fasta_dir is provided for iteration 1
     if args.iteration == 1 and not args.fasta_dir:
