@@ -376,7 +376,7 @@ def main():
 
         prev_run = f"../HmmRun{args.iteration - 1}"
         # Use the same db path pattern for the previous run
-        prev_db = f"{prev_run}/{args.project_name}HmmDatabase/{args.project_name}fam1"
+        prev_db = f"{prev_run}/{args.project_name}HmmDatabase/{args.project_name}Outputs"
 
         if not os.path.exists(f"{prev_run}/hogDirectoryFiltered"):
             print(f"Error: Previous filtered directory not found at '{prev_run}/hogDirectoryFiltered'.")
