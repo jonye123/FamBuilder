@@ -77,7 +77,7 @@ mkdir -p "$cat_dir"
 echo -e "Gene\tHog\tHmmHogHit\tE-value\tScore" > "$confusion_path"
 
 # Clear cat directory to avoid stale results
-rm -f "$cat_dir"/*
+find "$cat_dir" -mindepth 1 -maxdepth 1 -type f -delete
 
 echo "Running hmmscan on HOGs in '$hog_dir' against '$hmm_lib'..."
 echo "Output going to '$output_dir'..."
