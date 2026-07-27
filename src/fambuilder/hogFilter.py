@@ -170,12 +170,17 @@ def split_and_clean_hogs(hog_directory, gene_and_hog_to_remove, zeros_to_remove)
 
         filepath = os.path.join(hog_directory, filename)
 
-        # Parse the hog_id — handle both N0.HOG001.fasta and HOG001.fasta formats
-        # Also handle suffixed files like N0.HOG001-1.fasta
+        # Parse the hog_id — handle both N0.HOG001.fasta and HOG001.fasta formats.
+        # Keep the FULL id (including any -N split suffix): zeros_to_remove and
+        # gene_and_hog_to_remove are keyed on the exact fragment id (geneInfo's "hog"
+        # column and the confusion matrix's "Hog" column are both derived from the
+        # scanned file's own basename, suffix included — see build_gene_info() in
+        # confusionMatrixPlots.py and process_file() in confusionMatrixMaker.sh).
+        # Stripping to the base id here would collapse distinct sibling fragments
+        # (e.g. HOG0000061-2 and HOG0000061-14) onto the same key, causing removal
+        # lists for one fragment to be misapplied to unrelated siblings.
         basename = filename.replace(".fasta", "")
-        # Extract the core HOG id (strip N0. prefix if present, then take part before -)
         hog_id_full = basename.replace("N0.", "")
-        hog_id = hog_id_full.split("-")[0]
 
         # Load all sequences into memory
         sequences = {}
@@ -187,13 +192,13 @@ def split_and_clean_hogs(hog_directory, gene_and_hog_to_remove, zeros_to_remove)
             continue
 
         # Step 1: Remove no-hit genes (zeros_to_remove)
-        for gene in zeros_to_remove.get(hog_id, []):
+        for gene in zeros_to_remove.get(hog_id_full, []):
             sequences.pop(gene, None)
 
         # Step 2: Split out disagreeing genes into sub-family files
         file_counter = 0
         for (hog_key1, hog_key2), genes in gene_and_hog_to_remove.items():
-            if hog_id != hog_key1:
+            if hog_id_full != hog_key1:
                 continue
 
             file_counter += 1
