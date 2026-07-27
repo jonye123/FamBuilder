@@ -71,8 +71,12 @@ def filter_confusion_matrix(confusion_matrix_path, output_path, iqr_multiplier):
     print(f"Applying IQR filtering (multiplier={iqr_multiplier})...")
     filtered_df = (
         confusion_df
-        .groupby("HmmHogHit", group_keys=False)
-        .apply(lambda g: calculate_quartiles_and_filter(g, iqr_multiplier), include_groups=True)
+        .groupby("HmmHogHit", group_keys=True)
+        .apply(
+            lambda g: calculate_quartiles_and_filter(g, iqr_multiplier),
+            include_groups=False,
+        )
+        .reset_index(level=0)
         .reset_index(drop=True)
     )
 
