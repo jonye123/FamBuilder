@@ -422,12 +422,18 @@ def calculate_error(run_dir, config):
         sys.exit(1)
 
     # Count mishits (A): rows where Hog != HmmHogHit
+    # Look up column positions by name — filter_confusion_matrix()'s column
+    # order isn't guaranteed (e.g. it shifted after the include_groups=False
+    # fix for newer pandas), so a fixed index would silently compare the
+    # wrong columns.
     mishits = 0
     with open(filtered_confusion_path) as f:
-        next(f)  # skip header
+        header = f.readline().strip().split("\t")
+        hog_idx = header.index("Hog")
+        hmm_hit_idx = header.index("HmmHogHit")
         for line in f:
-            parts = line.strip().split("\t")
-            if len(parts) >= 3 and parts[1] != parts[2]:
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) > max(hog_idx, hmm_hit_idx) and parts[hog_idx] != parts[hmm_hit_idx]:
                 mishits += 1
 
     # Count total genes (B) and genes with HMM hits (C)
