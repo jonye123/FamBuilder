@@ -95,15 +95,13 @@ echo "DB dir      : $db_dir"
 # --- Step 1: MAFFT alignment ---
 echo ""
 echo "[1/4] Running MAFFT alignments..."
-bash "${scripts_dir}/maffter.sh" \
+if ! bash "${scripts_dir}/maffter.sh" \
     --input_dir "$hog_dir" \
     --output_dir "$msa_dir" \
     --jobs "$jobs" \
     ${prev_msa_dir:+--prev_msa_dir "$prev_msa_dir"} \
     ${prev_checksum_file:+--prev_checksum_file "$prev_checksum_file"} \
-    > "$log_dir/maffter.log" 2> "$log_dir/maffter.err"
-
-if [[ $? -ne 0 ]]; then
+    > "$log_dir/maffter.log" 2> "$log_dir/maffter.err"; then
     echo "Error: maffter.sh failed. Check '$log_dir/maffter.err'."
     exit 1
 fi
@@ -118,13 +116,11 @@ echo "MAFFT alignments complete."
 # --- Step 2: Build HMMs ---
 echo ""
 echo "[2/4] Building HMMs..."
-bash "${scripts_dir}/hmmbuilder.sh" \
+if ! bash "${scripts_dir}/hmmbuilder.sh" \
     --input_dir "$msa_dir" \
     --output_dir "$hmm_lib_dir" \
     --jobs "$jobs" \
-    > "$log_dir/hmmbuilder.log" 2> "$log_dir/hmmbuilder.err"
-
-if [[ $? -ne 0 ]]; then
+    > "$log_dir/hmmbuilder.log" 2> "$log_dir/hmmbuilder.err"; then
     echo "Error: hmmbuilder.sh failed. Check '$log_dir/hmmbuilder.err'."
     exit 1
 fi
@@ -154,8 +150,7 @@ if [[ ! -s "$hmm_lib" ]]; then
     exit 1
 fi
 
-hmmpress "$hmm_lib" > "$log_dir/hmmpress.log" 2> "$log_dir/hmmpress.err"
-if [[ $? -ne 0 ]]; then
+if ! hmmpress "$hmm_lib" > "$log_dir/hmmpress.log" 2> "$log_dir/hmmpress.err"; then
     echo "Error: hmmpress failed. Check '$log_dir/hmmpress.err'."
     exit 1
 fi
@@ -164,14 +159,12 @@ echo "HMM library pressed."
 # --- Step 4: Confusion matrix ---
 echo ""
 echo "[4/4] Generating confusion matrix..."
-bash "${scripts_dir}/confusionMatrixMaker.sh" \
+if ! bash "${scripts_dir}/confusionMatrixMaker.sh" \
     --hog_dir "$hog_dir" \
     --hmm_lib "$hmm_lib" \
     --output_dir "$db_dir" \
     --jobs "$jobs" \
-    > "$log_dir/confusionMatrix.log" 2> "$log_dir/confusionMatrix.err"
-
-if [[ $? -ne 0 ]]; then
+    > "$log_dir/confusionMatrix.log" 2> "$log_dir/confusionMatrix.err"; then
     echo "Error: confusionMatrixMaker.sh failed. Check '$log_dir/confusionMatrix.err'."
     exit 1
 fi

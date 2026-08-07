@@ -69,13 +69,21 @@ fi
 
 mkdir -p "$output_dir"
 
-# --- Helper: look up previous checksum for a HOG ID using grep ---
-get_prev_checksum() {
-    local hog_id="$1"
-    if [[ -n "$prev_checksum_file" && -f "$prev_checksum_file" ]]; then
-        grep -m1 "^${hog_id}	" "$prev_checksum_file" | cut -f2
-    fi
-}
+# --- Build a checksum -> previous HOG id map in one pass ---
+# Keyed on content, not on HOG id: hogFilter.py's split/cleanup step can
+# rename a fragment between iterations (e.g. promoting a "-1" sibling to
+# its parent's base name) even when the sequence content is unchanged, so
+# looking up by the OLD id would always miss. A grep-per-fragment lookup
+# against a checksum file with tens of thousands of lines is O(N*M) and
+# measurably slow at real scale (~80s/iteration in testing); building the
+# map once here and doing O(1) lookups in the loop below is the same
+# result in a fraction of a second.
+declare -A checksum_to_prev_hog_id
+if [[ -n "$prev_checksum_file" && -f "$prev_checksum_file" ]]; then
+    while IFS=$'\t' read -r prev_hog_id_entry prev_checksum_entry; do
+        checksum_to_prev_hog_id["$prev_checksum_entry"]="$prev_hog_id_entry"
+    done < "$prev_checksum_file"
+fi
 
 # --- Current checksum file for this iteration ---
 checksum_file="${output_dir}/msa_checksums.tsv"
@@ -93,6 +101,7 @@ echo "Jobs      : $jobs"
 # --- Separate HOGs into cached and needs-rerun ---
 cached_list=()
 rerun_list=()
+declare -A prev_msa_for_file
 
 for file in "$input_dir"/*.fasta; do
     [[ -f "$file" ]] || continue
@@ -107,16 +116,16 @@ for file in "$input_dir"/*.fasta; do
     # Write to current checksum file
     echo -e "${hog_id}\t${current_checksum}" >> "$checksum_file"
 
-    # Determine expected MSA output filename
-    prev_msa="${prev_msa_dir}/${basename}_mafft_output.fasta"
-
-    # Check if we can use the cached MSA
-    prev_checksum=$(get_prev_checksum "$hog_id")
-    if [[ -n "$prev_checksum" ]] && \
-       [[ "$prev_checksum" == "$current_checksum" ]] && \
+    # Check if a previous fragment with this exact content exists, under
+    # whatever name it had at the time (may differ from this fragment's
+    # current name — see the map built above).
+    prev_hog_id="${checksum_to_prev_hog_id[$current_checksum]:-}"
+    prev_msa="${prev_msa_dir}/${prev_hog_id}_mafft_output.fasta"
+    if [[ -n "$prev_hog_id" ]] && \
        [[ -n "$prev_msa_dir" ]] && \
        [[ -f "$prev_msa" ]]; then
         cached_list+=("$file")
+        prev_msa_for_file["$file"]="$prev_msa"
     else
         rerun_list+=("$file")
     fi
@@ -130,7 +139,7 @@ if [[ ${#cached_list[@]} -gt 0 ]]; then
     echo "Copying cached MSAs..."
     for file in "${cached_list[@]}"; do
         basename=$(basename "$file" .fasta)
-        prev_msa="${prev_msa_dir}/${basename}_mafft_output.fasta"
+        prev_msa="${prev_msa_for_file[$file]}"
         cp "$prev_msa" "${output_dir}/${basename}_mafft_output.fasta"
         count_cached=$((count_cached + 1))
     done
