@@ -243,26 +243,24 @@ def split_and_clean_hogs(hog_directory, gene_and_hog_to_remove, zeros_to_remove)
             continue
 
         filepath = os.path.join(hog_directory, filename)
-        hog_id = filename.split(".")[1].split("-")[0] if "." in filename else filename.split("-")[0]
 
         if os.path.getsize(filepath) == 0:
             print(f"Empty -0 file detected, cleaning up: {filename}")
             os.remove(filepath)
 
-            # Rename the corresponding -1 file back to the base name
-            for related_file in os.listdir(hog_directory):
-                related_hog_id = (
-                    related_file.split(".")[1].split("-")[0]
-                    if "." in related_file
-                    else related_file.split("-")[0]
-                )
-                if related_hog_id == hog_id and related_file.endswith("-1.fasta"):
-                    new_name = related_file.replace("-1.fasta", ".fasta")
-                    os.rename(
-                        os.path.join(hog_directory, related_file),
-                        os.path.join(hog_directory, new_name),
-                    )
-                    break
+            # Rename the DIRECT sibling -1 fragment back to the base name.
+            # Must match on the file's own immediate prefix, not an
+            # ultra-stripped base HOG id: with nested splits (e.g.
+            # HOG0001-3-0.fasta), stripping down to "HOG0001" and fuzzy-
+            # matching any "-1.fasta"-suffixed file sharing that base can
+            # hit an unrelated sibling from a different branch of the split
+            # tree (e.g. HOG0001-1.fasta), and os.listdir() order decides
+            # which one wins — a real, previously-hit bug.
+            sibling_1 = filename[: -len("-0.fasta")] + "-1.fasta"
+            sibling_path = os.path.join(hog_directory, sibling_1)
+            if os.path.exists(sibling_path):
+                new_name = filename[: -len("-0.fasta")] + ".fasta"
+                os.rename(sibling_path, os.path.join(hog_directory, new_name))
 
     print("HOG splitting and cleaning complete.")
 
