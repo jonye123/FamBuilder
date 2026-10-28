@@ -12,17 +12,17 @@ The following tools must be available in your PATH:
 - seqkit (only required for `scripts/splitAndScore.sh`)
 
 ## Installation
-
-```bash
-pip install fambuilder
-```
-
-Or for development:
+For development:
 
 ```bash
 git clone https://github.com/jonye123/FamBuilder
 cd FamBuilder
 pip install -e .
+```
+
+Once published:
+```bash
+pip install fambuilder
 ```
 
 ## Usage
